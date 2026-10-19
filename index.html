@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>가공식품 물리치기! - 중학생 영양 교육 게임</title>
+    <style>
+        :root {
+            --bg-color: #f0fdf4;
+            --primary: #16a34a;
+            --primary-dark: #15803d;
+            --danger: #dc2626;
+            --warning: #f59e0b;
+            --card-bg: #ffffff;
+            --text-dark: #1f2937;
+            --text-light: #6b7280;
+            --hole-bg: #451a03;
+            --hole-border: #78350f;
+            --hole-shadow: #290e02;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+            padding: 10px;
+        }
+
+        /* App Outer Container */
+        .app-container {
+            width: 100%;
+            max-width: 500px;
+            background-color: var(--card-bg);
+            border-radius: 24px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            border: 3px solid #bbf7d0;
+        }
+
+        /* Screen Management */
+        .screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px 20px;
+            width: 100%;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Common Typography & Buttons */
+        h1 {
+            font-size: 1.8rem;
+            color: var(--primary-dark);
+            text-align: center;
+            margin-bottom: 8px;
+            font-weight: 800;
+        }
+
+        p.subtitle {
+            font-size: 0.95rem;
+            color: var(--text-light);
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            border-radius: 16px;
+            cursor: pointer;
+            box-shadow: 0 4px 0 var(--primary-dark);
+            transition: all 0.1s ease;
+            width: 100%;
+            max-width: 280px;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 var(--primary-dark);
+        }
+
+        .btn-secondary {
+            background-color: #e5e7eb;
+            color: var(--text-dark);
+            box-shadow: 0 4px 0 #9ca3af;
+        }
+
+        .btn-secondary:active {
+            box-shadow: 0 0 0 #9ca3af;
+        }
+
+        /* Start Screen Layout */
+        .guide-box {
+            background-color: #f0fdf4;
+            border: 2px dashed #86efac;
+            border-radius: 16px;
+            padding: 16px;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .guide-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+        }
+
+        .guide-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .guide-badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            margin-right: 12px;
+            white-space: nowrap;
+        }
+
+        .badge-target {
+            background-color: #fee2e2;
+            color: var(--danger);
+        }
+
+        .badge-avoid {
+            background-color: #dcfce7;
+            color: var(--primary-dark);
+        }
+
+        /* In-Game HUD */
+        .hud {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            background-color: #f8fafc;
+            padding: 12px 16px;
+            border-radius: 16px;
+            margin-bottom: 16px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .hud-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .hud-label {
+            font-size: 0.75rem;
+            color: var(--text-light);
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .hud-value {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--text-dark);
+        }
+
+        .lives-container {
+            display: flex;
+            gap: 2px;
+            font-size: 1.1rem;
+        }
+
+        /* Combo Popup Overlay */
+        .combo-badge {
+            position: absolute;
+            top: 70px;
+            font-size: 1.2rem;
+            font-weight: 900;
+            color: var(--warning);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            opacity: 0;
+            transition: transform 0.2s, opacity 0.2s;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .combo-badge.active {
+            opacity: 1;
+            transform: scale(1.2);
+        }
+
+        /* Whack-A-Mole Grid */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            width: 100%;
+            aspect-ratio: 1;
+            background-color: #a16207;
+            padding: 14px;
+            border-radius: 20px;
+            box-shadow: inset 0 6px 12px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        .hole-wrapper {
+            position: relative;
+            overflow: hidden;
+            background-color: var(--hole-bg);
+            border-radius: 50%;
+            border: 4px solid var(--hole-border);
+            box-shadow: inset 0 8px 10px var(--hole-shadow);
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+        }
+
+        .item {
+            width: 80%;
+            height: 80%;
+            position: absolute;
+            bottom: -100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: bottom 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            border-radius: 50%;
+        }
+
+        .item.up {
+            bottom: 5%;
+        }
+
+        .item-icon {
+            font-size: 3.2rem;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2));
+            line-height: 1;
+            transition: transform 0.1s ease;
+        }
+
+        .item-icon:hover {
+            transform: scale(1.1);
+        }
+
+        .item-name {
+            font-size: 0.75rem;
+            font-weight: 800;
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 3px 8px;
+            border-radius: 8px;
+            margin-top: 2px;
+            color: var(--text-dark);
+            white-space: nowrap;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+        }
+
+        /* Floating Score Text Animation */
+        .float-text {
+            position: absolute;
+            font-weight: 900;
+            font-size: 1.2rem;
+            animation: floatUp 0.6s ease-out forwards;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-30px) scale(1.2); }
+        }
+
+        /* Result Screen Styles */
+        .result-card {
+            background-color: #f8fafc;
+            border-radius: 16px;
+            padding: 16px;
+            width: 100%;
+            text-align: center;
+            margin-bottom: 16px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .grade-badge {
+            font-size: 3rem;
+            font-weight: 900;
+            color: var(--primary);
+            margin: 5px 0;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .review-box {
+            width: 100%;
+            max-height: 180px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 10px;
+            margin-bottom: 16px;
+            background-color: #ffffff;
+            text-align: left;
+        }
+
+        .review-title {
+            font-weight: bold;
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 8px;
+        }
+
+        .review-item {
+            font-size: 0.8rem;
+            padding: 6px 8px;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .review-item:last-child { border-bottom: none; }
+
+        .audio-toggle {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: rgba(255,255,255,0.8);
+            border: 1px solid #cbd5e1;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1.1rem;
+            z-index: 30;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- Audio Toggle Button -->
+        <button id="audio-toggle-btn" class="audio-toggle" title="음소거 설정">🔊</button>
+
+        <!-- 1. Start Screen -->
+        <div id="start-screen" class="screen active">
+            <h1>가공식품 물리치기!</h1>
+            <p class="subtitle">중학교 2학년 영양 교육용 게임</p>
+
+            <div class="guide-box">
+                <div class="guide-item">
+                    <span class="guide-badge badge-target">타격 (+10점)</span>
+                    <span><strong>가공식품</strong>: 라면, 탄산음료, 햄버거, 과자 등</span>
+                </div>
+                <div class="guide-item">
+                    <span class="guide-badge badge-avoid">보호 (-15점/♥-1)</span>
+                    <span><strong>건강/천연식품</strong>: 사과, 브로콜리, 우유, 계란 등</span>
+                </div>
+            </div>
+
+            <div style="font-size: 0.85rem; color: var(--text-light); margin-bottom: 16px; text-align: center;">
+                💡 3회 연속 성공 시 콤보 보너스 발동!<br>
+                최고 기록: <span id="high-score-display" style="font-weight: bold; color: var(--primary);">0</span>점
+            </div>
+
+            <button id="start-btn" class="btn">게임 시작하기</button>
+        </div>
+
+        <!-- 2. In-Game Screen -->
+        <div id="game-screen" class="screen">
+            <div id="combo-badge" class="combo-badge">3 COMBO!</div>
+
+            <!-- HUD Header -->
+            <div class="hud">
+                <div class="hud-item">
+                    <span class="hud-label">점수</span>
+                    <span id="score" class="hud-value">0</span>
+                </div>
+                <div class="hud-item">
+                    <span class="hud-label">남은 시간</span>
+                    <span id="timer" class="hud-value">60s</span>
+                </div>
+                <div class="hud-item">
+                    <span class="hud-label">체력</span>
+                    <div id="lives" class="lives-container">❤️❤️❤️❤️❤️</div>
+                </div>
+            </div>
+
+            <!-- 3x3 Whack Grid -->
+            <div id="grid" class="grid">
+                <div class="hole-wrapper"><div class="item" data-index="0"></div></div>
+                <div class="hole-wrapper"><div class="item" data-index="1"></div></div>
+                <div class="hole-wrapper"><div class="item" data-index="2"></div></div>
+                <div class="hole-wrapper"><div class="item" data-index="3"></div></div>
+                <div class="hole-wrapper"><div class="item" data-index="4"></div></div>
+                <div class="hole-wrapper"><div class="item" data-index="5"></div></div>
+                <div class="hole-wrapper"><div class="item" data-index="6"></div></div>
+                <div class="hole-wrapper"><div class="item" data-index="7"></div></div>
+                <div class="hole-wrapper"><div class="item" data-index="8"></div></div>
+            </div>
+        </div>
+
+        <!-- 3. Result Screen -->
+        <div id="result-screen" class="screen">
+            <h1>게임 종료!</h1>
+            <p class="subtitle" id="game-over-reason">시간이 다 되었습니다!</p>
+
+            <div class="result-card">
+                <div style="font-size: 0.9rem; color: var(--text-light);">영양 지식 등급</div>
+                <div id="grade-badge" class="grade-badge">A</div>
+                <div style="font-size: 1.1rem; font-weight: bold; margin-bottom: 4px;">
+                    최종 점수: <span id="final-score" style="color: var(--primary);">0</span>점
+                </div>
+                <div id="new-record-tag" style="display: none; color: var(--warning); font-size: 0.85rem; font-weight: bold;">🎉 최고 기록 달성! 🎉</div>
+            </div>
+
+            <div class="review-box">
+                <div class="review-title">📌 오늘 학습한 식품 영양 정보</div>
+                <div id="review-list">
+                    <!-- Dynamic review items inserted here -->
+                </div>
+            </div>
+
+            <button id="restart-btn" class="btn">다시 도전하기</button>
+        </div>
+    </div>
+
+    <script>
+        // Nutrition Database (Middle school curriculum aligned)
+        const FOOD_DATABASE = [
+            // Processed Foods (Targets to whack)
+            { id: 'p1', name: '라면', icon: '🍜', type: 'processed', tip: '라면은 나트륨 함량이 높아 국물은 적게 먹는 것이 좋습니다.' },
+            { id: 'p2', name: '탄산음료', icon: '🥤', type: 'processed', tip: '탄산음료에는 당류가 과다 함유되어 비만과 치아 부식을 유발합니다.' },
+            { id: 'p3', name: '햄버거', icon: '🍔', type: 'processed', tip: '포화지방과 나트륨이 높아 채소와 함께 균형있게 섭취해야 합니다.' },
+            { id: 'p4', name: '감자칩', icon: '🥔', type: 'processed', tip: '튀긴 과자는 트랜스지방 함량이 높을 수 있으므로 적정량만 먹습니다.' },
+            { id: 'p5', name: '소시지', icon: '🌭', type: 'processed', tip: '가공육은 발색제 등 첨가물이 들어있어 데쳐 먹는 것이 좋습니다.' },
+            { id: 'p6', name: '도넛', icon: '🍩', type: 'processed', tip: '단순당과 정제당이 많아 혈당 수치를 급격히 올릴 수 있습니다.' },
+            { id: 'p7', name: '피자', icon: '🍕', type: 'processed', tip: '포화지방과 염분이 많아 과다 섭취 시 영양 불균형을 일으킵니다.' },
+            { id: 'p8', name: '사탕', icon: '🍬', type: 'processed', tip: '영양가는 적고 당류만 높아 충치의 주요 원인이 됩니다.' },
+
+            // Natural / Healthy Foods (Non-targets to protect)
+            { id: 'h1', name: '사과', icon: '🍎', type: 'healthy', tip: '사과는 식이섬유가 풍부하여 장 건강과 비타민 C 섭취에 좋습니다.' },
+            { id: 'h2', name: '브로콜리', icon: '🥦', type: 'healthy', tip: '브로콜리는 비타민 K와 칼슘이 풍부하여 뼈 건강에 유익합니다.' },
+            { id: 'h3', name: '우유', icon: '🥛', type: 'healthy', tip: '우유는 청소년기 성장에 필수적인 칼슘과 단백질 공급원입니다.' },
+            { id: 'h4', name: '계란', icon: '🥚', type: 'healthy', tip: '계란은 완전식품으로 질 좋은 단백질과 미네랄을 제공합니다.' },
+            { id: 'h5', name: '방울토마토', icon: '🍅', type: 'healthy', tip: '토마토의 라이코펜 성분은 항산화 작용과 세포 보호에 뛰어납니다.' },
+            { id: 'h6', name: '바나나', icon: '🍌', type: 'healthy', tip: '바나나는 칼륨이 풍부하여 체내 나트륨 배출을 도와줍니다.' },
+            { id: 'h7', name: '당근', icon: '🥕', type: 'healthy', tip: '당근의 베타카로틴은 체내에서 비타민 A로 변해 눈 건강을 지킵니다.' },
+            { id: 'h8', name: '생선', icon: '🐟', type: 'healthy', tip: '등푸른 생선은 오메가-3 지방산이 많아 두뇌 발달에 좋습니다.' }
+        ];
+
+        // Web Audio API Synthesizer (No external audio files required)
+        class SoundFX {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    if (AudioContext) {
+                        this.ctx = new AudioContext();
+                    }
+                }
+            }
+
+            playHit() {
+                if (this.muted || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(300, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(150, this.ctx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.1);
+            }
+
+            playError() {
+                if (this.muted || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+                osc.frequency.setValueAtTime(100, this.ctx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.25);
+            }
+
+            playCombo() {
+                if (this.muted || !this.ctx) return;
+                const notes = [440, 554.37, 659.25]; // A4, C#5, E4
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0.2, this.ctx.currentTime + idx * 0.08);
+                    gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + idx * 0.08 + 0.15);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(this.ctx.currentTime + idx * 0.08);
+                    osc.stop(this.ctx.currentTime + idx * 0.08 + 0.15);
+                });
+            }
+        }
+
+        const sfx = new SoundFX();
+
+        // Game State Variables
+        let score = 0;
+        let lives = 5;
+        let timeLeft = 60;
+        let combo = 0;
+        let gameTimer = null;
+        let spawnTimer = null;
+        let activeHoles = new Array(9).fill(null); // Tracks spawned item per hole
+        let encounteredFoods = new Set(); // Stores foods seen during the session for review
+        let highScore = 0;
+
+        // Load High Score safely from localStorage
+        try {
+            const savedScore = localStorage.getItem('whack_processed_highscore');
+            if (savedScore !== null) {
+                highScore = parseInt(savedScore, 10) || 0;
+            }
+        } catch (e) {
+            console.warn('localStorage access failed:', e);
+        }
+
+        // DOM Elements
+        const screens = {
+            start: document.getElementById('start-screen'),
+            game: document.getElementById('game-screen'),
+            result: document.getElementById('result-screen')
+        };
+
+        const elements = {
+            score: document.getElementById('score'),
+            timer: document.getElementById('timer'),
+            lives: document.getElementById('lives'),
+            grid: document.getElementById('grid'),
+            comboBadge: document.getElementById('combo-badge'),
+            highScoreDisplay: document.getElementById('high-score-display'),
+            finalScore: document.getElementById('final-score'),
+            gradeBadge: document.getElementById('grade-badge'),
+            gameOverReason: document.getElementById('game-over-reason'),
+            newRecordTag: document.getElementById('new-record-tag'),
+            reviewList: document.getElementById('review-list'),
+            audioBtn: document.getElementById('audio-toggle-btn')
+        };
+
+        elements.highScoreDisplay.textContent = highScore;
+
+        function showScreen(screenName) {
+            Object.keys(screens).forEach(name => {
+                screens[name].classList.toggle('active', name === screenName);
+            });
+        }
+
+        // Audio Mute Toggle
+        elements.audioBtn.addEventListener('click', () => {
+            sfx.init();
+            sfx.muted = !sfx.muted;
+            elements.audioBtn.textContent = sfx.muted ? '🔇' : '🔊';
+        });
+
+        function startGame() {
+            sfx.init();
+            score = 0;
+            lives = 5;
+            timeLeft = 60;
+            combo = 0;
+            encounteredFoods.clear();
+            activeHoles.fill(null);
+
+            // Reset UI
+            elements.score.textContent = '0';
+            elements.timer.textContent = '60s';
+            updateLivesDisplay();
+            
+            // Clear items on grid
+            const itemEls = document.querySelectorAll('.item');
+            itemEls.forEach(el => {
+                el.classList.remove('up');
+                el.innerHTML = '';
+            });
+
+            showScreen('game');
+
+            // Start Timers
+            gameTimer = setInterval(tick, 1000);
+            scheduleNextSpawn();
+        }
+
+        function updateLivesDisplay() {
+            let hearts = '';
+            for (let i = 0; i < 5; i++) {
+                hearts += i < lives ? '❤️' : '🖤';
+            }
+            elements.lives.textContent = hearts;
+        }
+
+        function tick() {
+            timeLeft--;
+            elements.timer.textContent = `${timeLeft}s`;
+
+            if (timeLeft <= 0) {
+                endGame('시간이 종료되었습니다!');
+            }
+        }
+
+        // Calculate dynamic spawn timing and food composition based on game progression
+        function getDifficultySettings() {
+            const elapsed = 60 - timeLeft;
+            if (elapsed <= 20) {
+                return { interval: 1400, healthyRatio: 0.2, popDuration: 1300 };
+            } else if (elapsed <= 40) {
+                return { interval: 1000, healthyRatio: 0.35, popDuration: 1000 };
+            } else {
+                return { interval: 700, healthyRatio: 0.5, popDuration: 800 };
+            }
+        }
+
+        function scheduleNextSpawn() {
+            if (timeLeft <= 0 || lives <= 0) return;
+
+            const settings = getDifficultySettings();
+            spawnFood(settings.popDuration);
+
+            spawnTimer = setTimeout(scheduleNextSpawn, settings.interval);
+        }
+
+        function spawnFood(duration) {
+            // Find empty holes
+            const emptyIndices = [];
+            activeHoles.forEach((item, idx) => {
+                if (item === null) emptyIndices.push(idx);
+            });
+
+            if (emptyIndices.length === 0) return;
+
+            const holeIdx = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+            const settings = getDifficultySettings();
+            
+            // Pick food based on healthy ratio
+            const isHealthy = Math.random() < settings.healthyRatio;
+            const availableFoods = FOOD_DATABASE.filter(f => isHealthy ? f.type === 'healthy' : f.type === 'processed');
+            const selectedFood = availableFoods[Math.floor(Math.random() * availableFoods.length)];
+
+            encounteredFoods.add(selectedFood);
+            activeHoles[holeIdx] = selectedFood;
+
+            // Render to DOM
+            const holeEl = elements.grid.children[holeIdx];
+            const itemEl = holeEl.querySelector('.item');
+            itemEl.innerHTML = `
+                <div class="item-icon">${selectedFood.icon}</div>
+                <div class="item-name">${selectedFood.name}</div>
+            `;
+            itemEl.classList.add('up');
+
+            // Auto retreat timer
+            const hideTimer = setTimeout(() => {
+                if (activeHoles[holeIdx] === selectedFood) {
+                    // Missed processed food breaks combo
+                    if (selectedFood.type === 'processed') {
+                        resetCombo();
+                    }
+                    retractItem(holeIdx);
+                }
+            }, duration);
+
+            // Store timer ref on element
+            itemEl.dataset.hideTimer = hideTimer;
+        }
+
+        function retractItem(holeIdx) {
+            const holeEl = elements.grid.children[holeIdx];
+            const itemEl = holeEl.querySelector('.item');
+            clearTimeout(itemEl.dataset.hideTimer);
+            itemEl.classList.remove('up');
+            activeHoles[holeIdx] = null;
+        }
+
+        elements.grid.addEventListener('pointerdown', (e) => {
+            const itemEl = e.target.closest('.item');
+            if (!itemEl || !itemEl.classList.contains('up')) return;
+
+            const holeIdx = parseInt(itemEl.dataset.index, 10);
+            const food = activeHoles[holeIdx];
+            if (!food) return;
+
+            // Prevent double taps
+            retractItem(holeIdx);
+
+            // Floating feedback text setup
+            const rect = itemEl.getBoundingClientRect();
+            const gridRect = elements.grid.getBoundingClientRect();
+            const x = rect.left - gridRect.left + rect.width / 2;
+            const y = rect.top - gridRect.top;
+
+            if (food.type === 'processed') {
+                // Correct Whack!
+                combo++;
+                let scoreGained = 10;
+                
+                if (combo >= 3) {
+                    scoreGained = Math.round(10 * 1.2); // Combo multiplier
+                    triggerComboUI();
+                    sfx.playCombo();
+                } else {
+                    sfx.playHit();
+                }
+
+                score += scoreGained;
+                showFloatingText(`+${scoreGained}`, x, y, '#16a34a');
+            } else {
+                // Incorrect Whack! (Healthy food)
+                resetCombo();
+                score = Math.max(0, score - 15);
+                lives--;
+                updateLivesDisplay();
+                sfx.playError();
+                showFloatingText(`-15 ♥-1`, x, y, '#dc2626');
+
+                if (lives <= 0) {
+                    endGame('체력이 모두 소진되었습니다!');
+                }
+            }
+
+            elements.score.textContent = score;
+        });
+
+        function triggerComboUI() {
+            elements.comboBadge.textContent = `${combo} COMBO!`;
+            elements.comboBadge.classList.add('active');
+            setTimeout(() => {
+                elements.comboBadge.classList.remove('active');
+            }, 600);
+        }
+
+        function resetCombo() {
+            combo = 0;
+        }
+
+        function showFloatingText(text, x, y, color) {
+            const el = document.createElement('div');
+            el.className = 'float-text';
+            el.textContent = text;
+            el.style.left = `${x}px`;
+            el.style.top = `${y}px`;
+            el.style.color = color;
+            elements.grid.appendChild(el);
+
+            setTimeout(() => {
+                if (el.parentNode) el.parentNode.removeChild(el);
+            }, 600);
+        }
+
+        function endGame(reason) {
+            clearInterval(gameTimer);
+            clearTimeout(spawnTimer);
+
+            elements.gameOverReason.textContent = reason;
+            elements.finalScore.textContent = score;
+
+            // Rating logic
+            let grade = 'F';
+            if (score >= 200) grade = 'S';
+            else if (score >= 150) grade = 'A';
+            else if (score >= 100) grade = 'B';
+            else if (score >= 50) grade = 'C';
+            else grade = 'D';
+
+            elements.gradeBadge.textContent = grade;
+
+            // High score persistence
+            let isNewRecord = false;
+            if (score > highScore) {
+                highScore = score;
+                isNewRecord = true;
+                try {
+                    localStorage.setItem('whack_processed_highscore', highScore.toString());
+                } catch (e) {
+                    console.warn('Failed to save score:', e);
+                }
+            }
+
+            elements.highScoreDisplay.textContent = highScore;
+            elements.newRecordTag.style.display = isNewRecord ? 'block' : 'none';
+
+            // Populate Nutrition Review List
+            elements.reviewList.innerHTML = '';
+            const reviewItems = Array.from(encounteredFoods);
+            if (reviewItems.length === 0) {
+                // Fallback list
+                FOOD_DATABASE.slice(0, 4).forEach(f => reviewItems.push(f));
+            }
+
+            reviewItems.forEach(food => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'review-item';
+                const typeColor = food.type === 'processed' ? '#dc2626' : '#16a34a';
+                const typeLabel = food.type === 'processed' ? '가공' : '건강';
+                
+                itemDiv.innerHTML = `
+                    <div>
+                        <strong>${food.icon} ${food.name}</strong> 
+                        <span style="color:${typeColor}; font-size:0.75rem;">[${typeLabel}]</span>
+                        <div style="color:#6b7280; margin-top:2px;">${food.tip}</div>
+                    </div>
+                `;
+                elements.reviewList.appendChild(itemDiv);
+            });
+
+            showScreen('result');
+        }
+
+        // Event Listeners for Game Controls
+        document.getElementById('start-btn').addEventListener('click', startGame);
+        document.getElementById('restart-btn').addEventListener('click', startGame);
+    </script>
+</body>
+</html>
